@@ -1,5 +1,6 @@
 package nl.han.ica.icss.parser;
 
+import nl.han.ica.icss.Pipeline;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -80,5 +81,13 @@ class ParserTest {
 		AST sut = parseTestFile("level3.icss");
 		AST exp = Fixtures.uncheckedLevel3();
 		assertEquals(exp,sut);
+	}
+
+	@Test
+	void testParseCheckTransformGenerate() throws IOException {
+
+		Pipeline pipeline = new Pipeline();
+		AST sut = parseTestFile("level3.icss");
+
 	}
 }

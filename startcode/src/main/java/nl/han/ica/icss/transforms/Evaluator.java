@@ -29,18 +29,30 @@ public class Evaluator implements Transform {
         for (ASTNode node : ast.root.body){
             if(node instanceof Stylerule){
                 node = evaluateIfClause((Stylerule) node, 0);
-                evaluateBody(((Stylerule) node).body);
+                variableValues.addFirst(new HashMap<>());
+                evaluateBody(((Stylerule) node).body, new ArrayList<>(),0);
+                variableValues.removeFirst();
             }
         }
         variableValues.removeFirst();
     }
 
+    /**
+     * Add global variables to variableValues and delete them from the ast
+     * @param ast
+     */
     private void globalVariables(AST ast) {
         variableValues.addFirst(new HashMap<>());
         ast.root.body.stream().filter(node -> node instanceof VariableAssignment).forEach(node -> saveVariableType((VariableAssignment) node));
         ast.root.body.removeAll(ast.root.body.stream().filter(node -> node instanceof VariableAssignment).collect(Collectors.toList()));
     }
 
+    /**
+     * Recursively evaluates a given stylerule
+     * @param stylerule
+     * @param index
+     * @return
+     */
     private Stylerule evaluateIfClause(Stylerule stylerule, int index) {
         if (stylerule.body.size() <= index){
             return stylerule;
@@ -52,6 +64,8 @@ public class Evaluator implements Transform {
         if (stylerule.body.get(index) instanceof VariableAssignment){
             variableValues.addFirst(new HashMap<>());
             saveVariableType((VariableAssignment) stylerule.body.get(index));
+            stylerule.body.remove(index);
+            return evaluateIfClause(stylerule,index);
             //variableValues.getFirst().put(((VariableAssignment) stylerule.body.get(index)).name,((VariableAssignment) stylerule.body.get(index)).expression);
         }
         if (stylerule.body.get(index) instanceof IfClause){
@@ -60,9 +74,11 @@ public class Evaluator implements Transform {
                 BoolLiteral clause = (BoolLiteral) getVariable(((VariableReference) ifClause.conditionalExpression).name);
                 assert clause != null;
                 rebuildIfClause(stylerule, index, ifClause, clause);
+                evaluateIfClause(stylerule,index);
             }
             if(ifClause.conditionalExpression instanceof BoolLiteral){
                 rebuildIfClause(stylerule, index, ifClause, ((BoolLiteral) ifClause.conditionalExpression));
+                evaluateIfClause(stylerule,index);
             }
             index++;
             return evaluateIfClause(stylerule,index);
@@ -71,10 +87,18 @@ public class Evaluator implements Transform {
         return stylerule;
     }
 
+    /**
+     * Rebuilds the stylerule based on the boolean clause
+     * @param stylerule
+     * @param index
+     * @param ifClause
+     * @param clause
+     */
     private void rebuildIfClause(Stylerule stylerule, int index, IfClause ifClause, BoolLiteral clause) {
         if(clause.value){
             stylerule.body.remove(ifClause);
             stylerule.body.addAll(index, ifClause.body);
+
         }
         if(!clause.value && ifClause.elseClause!=null){
             stylerule.body.remove(ifClause);
@@ -83,7 +107,12 @@ public class Evaluator implements Transform {
         else stylerule.body.remove(ifClause);
     }
 
+    /**
+     *
+     * @param node
+     */
     private void saveVariableType(VariableAssignment node) {
+        //calculates the operation of
         if(node.expression instanceof Operation){
             node.expression = calculateOperation(node.expression);
         }
@@ -96,22 +125,26 @@ public class Evaluator implements Transform {
         variableValues.get(index).put(node.name.name, (Literal) node.expression);
     }
 
-    private void evaluateBody(ArrayList<ASTNode> nodes) {
-        variableValues.addFirst(new HashMap<>());
-        for (ASTNode node : nodes){
+    private void evaluateBody(ArrayList<ASTNode> nodes, ArrayList<PropertyName> stylerules, int index) {
+        if(nodes.size()>index){
+            ASTNode node = nodes.get(index);
             if(node instanceof Declaration){
                 if(((Declaration) node).expression instanceof VariableReference){
                     ((Declaration) node).expression = getVariable(((VariableReference) ((Declaration) node).expression).name);
+                    stylerules.add((((Declaration) node).property));
                 }
                 else if(((Declaration) node).expression instanceof Operation){
                     ((Declaration) node).expression = calculateOperation(((Declaration) node).expression);
+                    variableValues.getFirst().put(((Declaration) node).property.name, (Literal) ((Declaration) node).expression);
                 }
+                else variableValues.getFirst().put(((Declaration) node).property.name, (Literal) ((Declaration) node).expression);
             }
             else if(node instanceof VariableAssignment){
                 saveVariableType((VariableAssignment) node);
             }
+            index++;
+            evaluateBody(nodes,stylerules,index);
         }
-        variableValues.removeFirst();
     }
 
     private Expression calculateOperation(Expression expression) {

@@ -8,18 +8,18 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class EvaluatorTest {
+    Evaluator sut = new Evaluator();
 
     @Test
     void transformTrueIfClause() {
         //arrange
-        Evaluator sut = new Evaluator();
-        Stylesheet stylesheet = new Stylesheet();
+        Stylesheet input = new Stylesheet();
         ASTNode exptectedNode = new Declaration("color").addChild(new ColorLiteral("#124532"));
-        stylesheet.addChild((new VariableAssignment())
+        input.addChild((new VariableAssignment())
                 .addChild(new VariableReference("AdjustColor"))
                 .addChild(new BoolLiteral(true))
         );
-        stylesheet.addChild((new Stylerule())
+        input.addChild((new Stylerule())
                 .addChild(new TagSelector("p"))
                 .addChild((new IfClause())
                         .addChild(new VariableReference("AdjustColor"))
@@ -32,7 +32,7 @@ class EvaluatorTest {
                 .addChild(exptectedNode)
         );
         //act
-        AST ast = new AST(stylesheet);
+        AST ast = new AST(input);
         sut.apply(ast);
         //assert
         Assertions.assertEquals(output, ast.root);
@@ -41,7 +41,6 @@ class EvaluatorTest {
     @Test
     void transformFalseIfClause() {
         //arrange
-        Evaluator sut = new Evaluator();
         Stylesheet input = new Stylesheet();
         ASTNode exptectedNode = new Declaration("color").addChild(new ColorLiteral("#124532"));
         input.addChild((new VariableAssignment())
@@ -63,6 +62,24 @@ class EvaluatorTest {
         sut.apply(ast);
         //assert
         Assertions.assertEquals(output, ast.root);
+    }
+
+    @Test
+    void removeVariableAssignmentFromBody() {
+        Stylesheet input = new Stylesheet();
+        ASTNode exptectedNode = new Declaration("color").addChild(new ColorLiteral("#124532"));
+        input.addChild((new VariableAssignment())
+                .addChild(new VariableReference("AdjustColor"))
+                .addChild(new BoolLiteral(false))
+        );
+        input.addChild((new Stylerule())
+                .addChild(new TagSelector("p"))
+                .addChild((new IfClause())
+                        .addChild(new VariableReference("AdjustColor"))
+                        .addChild(exptectedNode)
+
+                )
+        );
     }
 
     @Test

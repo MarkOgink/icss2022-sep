@@ -8,6 +8,11 @@ import nl.han.ica.icss.ast.literals.PixelLiteral;
 
 public class Generator {
 
+    /**
+     * Generates a CSS2-compliant string from a given ast
+     * @param ast
+     * @return
+     */
     public String generate(AST ast) {
         StringBuilder output = new StringBuilder();
         ast.root.body.forEach(astNode -> {
@@ -25,6 +30,11 @@ public class Generator {
         return output.toString();
     }
 
+    /**
+     * Adds declarations to output
+     * @param output
+     * @param declaration
+     */
     private void addDeclaration(StringBuilder output, Declaration declaration) {
         output.append(declaration.property.name);
         output.append(": ");

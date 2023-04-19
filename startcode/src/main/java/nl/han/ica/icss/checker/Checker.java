@@ -78,6 +78,10 @@ public class Checker {
     }
 
     private void setVariableTypes(VariableAssignment node) {
+        ExpressionType assignedVariable = getInitialisedVariableType(node.name);
+        if(assignedVariable!=null && getExpressionType((Literal) node.expression)!=assignedVariable){
+            node.setError("Variable type is already set");
+        }
         if (node.expression instanceof BoolLiteral) {
             variableTypes.getFirst().put(node.name.name, ExpressionType.BOOL);
         } else if (node.expression instanceof ColorLiteral) {
@@ -210,7 +214,6 @@ public class Checker {
                 ExpressionType lhsType = getInitialisedVariableType((VariableReference) node.lhs);
                 if (lhsType == null) {
                     node.lhs.setError("variable " + ((VariableReference) node.lhs).name + " is not initialized");
-                    //return ExpressionType.UNDEFINED;
                 } else if (expressionTypes.getSize() > 0) {
                     expressionTypes.addFirst(lhsType);
                     return checkMultiplicationWithThreeOrMoreNumbers(node, expressionTypes);
@@ -226,7 +229,6 @@ public class Checker {
                 ExpressionType rhsType = getInitialisedVariableType((VariableReference) node.rhs);
                 if (rhsType == null) {
                     node.rhs.setError("variable " + ((VariableReference) node.rhs).name + " is not initialized");
-                    //return ExpressionType.UNDEFINED;
                 } else if (expressionTypes.getSize() > 0) {
                     expressionTypes.addFirst(rhsType);
                     return checkMultiplicationWithThreeOrMoreNumbers(node, expressionTypes);
@@ -236,7 +238,6 @@ public class Checker {
                 } else if (ExpressionType.SCALAR.equals(getExpressionType((Literal) node.lhs))) {
                     return rhsType;
                 } else return ExpressionType.UNDEFINED;
-                //return checkMultiplicationTypes(node,getExpressionType((Literal) node.lhs),rhsType);
             }
         }
         //both literals
@@ -261,7 +262,6 @@ public class Checker {
                 return getExpressionType((Literal) node.lhs);
             }
         }
-        System.out.println("oh no");
         return ExpressionType.UNDEFINED;
     }
 
